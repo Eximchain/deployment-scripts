@@ -1,3 +1,4 @@
+import argparse
 import boto3
 import json
 
@@ -19,6 +20,11 @@ MAKER_ROLE_FILTER={'Name': 'tag:Role', 'Values': ['Maker']}
 VALIDATOR_ROLE_FILTER={'Name': 'tag:Role', 'Values': ['Validator']}
 OBSERVER_ROLE_FILTER={'Name': 'tag:Role', 'Values': ['Observer']}
 BOOTNODE_ROLE_FILTER={'Name': 'tag:Role', 'Values': ['Bootnode']}
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Create config for ssh-to via AWS')
+    parser.add_argument('--ssh-user', dest='ssh_user', default='ubuntu', action='store', help='Username that will be used to ssh instances')
+    return parser.parse_args()
 
 def get_instances_by_region():
     instances_by_region = {}
@@ -54,7 +60,8 @@ def convert_to_output_lists(instances_by_region):
         for instance in instances:
             name_tag = [tag for tag in instance.tags if tag['Key'] == 'Name']
             name = name_tag[0]['Value']
-            entry = [instance.public_dns_name, name]
+            host = args.ssh_user + "@" + instance.public_dns_name
+            entry = [host, name]
 
             if len(output_list_a) > len (output_list_b):
                 output_list_b.append(entry)
@@ -63,6 +70,8 @@ def convert_to_output_lists(instances_by_region):
     return output_list_a, output_list_b
 
 # Main script body
+args = parse_args()
+
 all_instances_by_region = get_instances_by_region()
 
 vault_instances_by_region = filter_vault_instances(all_instances_by_region)
