@@ -59,12 +59,13 @@ def filter_bootnode_instances(instances_by_region):
 def convert_to_output_lists(instances_by_region):
     output_list_a = []
     output_list_b = []
-    for instances in instances_by_region.values():
+    for region,instances in instances_by_region.items():
         for instance in instances:
             name_tag = [tag for tag in instance.tags if tag['Key'] == 'Name']
             name = name_tag[0]['Value']
             host = args.ssh_user + "@" + instance.public_dns_name
-            entry = [host, name]
+            comment = f'{region}:{instance.instance_id}'
+            entry = [host, name, comment]
 
             if len(output_list_a) > len (output_list_b):
                 output_list_b.append(entry)
