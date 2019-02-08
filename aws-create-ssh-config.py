@@ -1,6 +1,7 @@
 import argparse
 import boto3
 import json
+import os
 
 OUT_FILE_INITIAL = "initial-servers.json"
 OUT_FILE_FINAL = "final-servers.json"
@@ -75,6 +76,8 @@ def convert_to_output_lists(instances_by_region):
 args = parse_args()
 
 out_file = OUT_FILE_FINAL if args.final else OUT_FILE_INITIAL
+if os.path.isfile(out_file):
+    raise RuntimeError('Output file already exists. Aborting to prevent accidental overwrite')
 
 all_instances_by_region = get_instances_by_region()
 
