@@ -2,7 +2,7 @@ import argparse
 import boto3
 import json
 
-OUT_FILE = "servers.json"
+OUT_FILE = "initial-servers.json"
 
 # Network ID for main network, gamma, and beta
 NETWORK_ID="1"
