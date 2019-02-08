@@ -2,7 +2,8 @@ import argparse
 import boto3
 import json
 
-OUT_FILE = "initial-servers.json"
+OUT_FILE_INITIAL = "initial-servers.json"
+OUT_FILE_FINAL = "final-servers.json"
 
 # Network ID for main network, gamma, and beta
 NETWORK_ID="1"
@@ -24,6 +25,7 @@ BOOTNODE_ROLE_FILTER={'Name': 'tag:Role', 'Values': ['Bootnode']}
 def parse_args():
     parser = argparse.ArgumentParser(description='Create config for ssh-to via AWS')
     parser.add_argument('--ssh-user', dest='ssh_user', default='ubuntu', action='store', help='Username that will be used to ssh instances')
+    parser.add_argument('--final', dest='final', default=False, action='store_true', help='Output to final-servers.json instead')
     return parser.parse_args()
 
 def get_instances_by_region():
@@ -72,6 +74,8 @@ def convert_to_output_lists(instances_by_region):
 # Main script body
 args = parse_args()
 
+out_file = OUT_FILE_FINAL if args.final else OUT_FILE_INITIAL
+
 all_instances_by_region = get_instances_by_region()
 
 vault_instances_by_region = filter_vault_instances(all_instances_by_region)
@@ -97,5 +101,5 @@ output = {
     'bootnode-a': bootnode_output_list_a, 'bootnode-b': bootnode_output_list_b
 }
 
-with open(OUT_FILE, 'w') as f:
+with open(out_file, 'w') as f:
     json.dump(output, f, indent=2)
