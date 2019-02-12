@@ -105,5 +105,13 @@ output = {
     'bootnode-a': bootnode_output_list_a, 'bootnode-b': bootnode_output_list_b
 }
 
+if args.final:
+    output['all-servers'] = vault_output_list_a + vault_output_list_b + \
+                            consul_output_list_a + consul_output_list_b + \
+                            maker_output_list_a + maker_output_list_b + \
+                            validator_output_list_a + validator_output_list_b + \
+                            observer_output_list_a + observer_output_list_b + \
+                            bootnode_output_list_a + bootnode_output_list_b
+
 with open(out_file, 'w') as f:
     json.dump(output, f, indent=2)
