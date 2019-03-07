@@ -9,6 +9,7 @@ OUT_FILE = "temp-servers.json"
 # Network ID for main network, gamma, and beta
 NETWORK_ID="1"
 NETWORK_ID_FILTER = {'Name': 'tag:NetworkId', 'Values': [NETWORK_ID]}
+RUNNING_FILTER={'Name': 'instance-state-name', 'Values': ['running']}
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Create config for ssh-to via AWS')
@@ -23,7 +24,7 @@ def check_for_replacement(old_exim_node):
     # 1. The old instance is still up and the new one is not up yet
     # 2. The old instance is down but the new one is not up yet
     # 3. The new instance is up
-    instances = conn.instances.filter(Filters=[NETWORK_ID_FILTER, name_filter])
+    instances = conn.instances.filter(Filters=[NETWORK_ID_FILTER, RUNNING_FILTER, name_filter])
     # In case 2 this loop has no iterations
     for instance in instances:
         temp_exim_node = EximNode.from_boto_instance(instance)

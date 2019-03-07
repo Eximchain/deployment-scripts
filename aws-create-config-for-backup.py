@@ -15,6 +15,7 @@ SUPPORTED_REGIONS = ['us-east-1', 'us-east-2', 'us-west-1', 'us-west-2',
 
 NETWORK_ID_FILTER={'Name': 'tag:NetworkId', 'Values': [NETWORK_ID]}
 NODE_FILTER={'Name': 'tag:Role', 'Values': ['Maker', 'Validator', 'Observer']}
+RUNNING_FILTER={'Name': 'instance-state-name', 'Values': ['running']}
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Create config for ssh-to via AWS')
@@ -23,7 +24,7 @@ def parse_args():
 
 def get_instance_in_region(region):
     conn = boto3.resource('ec2', region_name=region)
-    instances = conn.instances.filter(Filters=[NETWORK_ID_FILTER, NODE_FILTER])
+    instances = conn.instances.filter(Filters=[NETWORK_ID_FILTER, RUNNING_FILTER, NODE_FILTER])
     for instance in instances:
         # Choose arbitrarily
         return instance

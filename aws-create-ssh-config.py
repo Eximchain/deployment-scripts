@@ -15,6 +15,7 @@ SUPPORTED_REGIONS = ['us-east-1', 'us-east-2', 'us-west-1', 'us-west-2',
                      'ca-central-1', 'sa-east-1']
 
 NETWORK_ID_FILTER={'Name': 'tag:NetworkId', 'Values': [NETWORK_ID]}
+RUNNING_FILTER={'Name': 'instance-state-name', 'Values': ['running']}
 
 VAULT_ROLE_FILTER={'Name': 'tag:Role', 'Values': ['Vault']}
 CONSUL_ROLE_FILTER={'Name': 'tag:Role', 'Values': ['Consul']}
@@ -33,7 +34,7 @@ def get_instances_by_region():
     instances_by_region = {}
     for region in SUPPORTED_REGIONS:
         ec2 = boto3.resource('ec2', region_name=region)
-        instances = ec2.instances.filter(Filters=[NETWORK_ID_FILTER])
+        instances = ec2.instances.filter(Filters=[NETWORK_ID_FILTER, RUNNING_FILTER])
         instances_by_region[region] = instances
     return instances_by_region
 
