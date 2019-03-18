@@ -17,6 +17,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Create config for ssh-to via AWS')
     parser.add_argument('--ssh-user', dest='ssh_user', default='ubuntu', action='store', help='Username that will be used to ssh instances')
     parser.add_argument('--refresh-group', dest='refresh_group', required=True, action='store', help='Group from the input that is being replaced')
+    parser.add_argument('--no-elastic-ips', dest='no_elastic_ips', default=False, action='store_true', help='Disable the expectation for elastic IPs on bootnodes and observers')
     return parser.parse_args()
 
 def check_for_replacement(old_exim_node, expect_elastic_ips):
@@ -108,7 +109,7 @@ class EximNode:
 
 # Main script body
 args = parse_args()
-expect_elastic_ips = args.refresh_group in ELASTIC_IP_GROUPS
+expect_elastic_ips = args.refresh_group in ELASTIC_IP_GROUPS and not args.no_elastic_ips
 
 with open(IN_FILE, 'r') as f:
     input = json.load(f)
