@@ -11,13 +11,15 @@ NETWORK_ID="1"
 NETWORK_ID_FILTER = {'Name': 'tag:NetworkId', 'Values': [NETWORK_ID]}
 RUNNING_FILTER={'Name': 'instance-state-name', 'Values': ['running']}
 
+ELASTIC_IP_GROUPS = ['bootnode-a', 'bootnode-b', 'observer-a', 'observer-b']
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Create config for ssh-to via AWS')
     parser.add_argument('--ssh-user', dest='ssh_user', default='ubuntu', action='store', help='Username that will be used to ssh instances')
     parser.add_argument('--refresh-group', dest='refresh_group', required=True, action='store', help='Group from the input that is being replaced')
     return parser.parse_args()
 
-def check_for_replacement(old_exim_node):
+def check_for_replacement(old_exim_node, expect_elastic_ips):
     name_filter = {'Name': 'tag:Name', 'Values': [old_exim_node.name]}
     conn = boto3.resource('ec2', region_name=old_exim_node.region)
     # We distinguish 3 cases based on the contents of 'instances'
@@ -32,19 +34,23 @@ def check_for_replacement(old_exim_node):
         if old_exim_node.instance_id == temp_exim_node.instance_id:
             print(f'Old instance {old_exim_node.instance_id} for {old_exim_node.name} not yet replaced')
             continue
+        # If we expect elastic IPs for this group and we haven't assigned it yet, keep waiting
+        if expect_elastic_ips and (len(instance.network_interfaces) != 1 or instance.network_interfaces[0].association_attribute["IpOwnerId"] == 'amazon'):
+            print(f'New instance {temp_exim_node.instance_id} expected to use elastic IP, but isn\'t associated yet')
+            continue
         # If the hostname didn't change with the instance id this is probably a bug
         assert(old_exim_node.hostname != temp_exim_node.hostname)
         return temp_exim_node
     return None
 
-def wait_for_replacements(nodes_to_replace):
+def wait_for_replacements(nodes_to_replace, expect_elastic_ips):
     original_to_replacement = {node: None for node in nodes_to_replace}
     num_unreplaced_nodes = len(original_to_replacement)
 
     while num_unreplaced_nodes > 0:
         for original_node,replacement_node in original_to_replacement.items():
             if replacement_node == None:
-                original_to_replacement[original_node] = check_for_replacement(original_node)
+                original_to_replacement[original_node] = check_for_replacement(original_node, expect_elastic_ips)
         num_unreplaced_nodes = len([node for node in original_to_replacement.values() if node == None])
         print(f'Still waiting for {num_unreplaced_nodes} unreplaced nodes')
         if num_unreplaced_nodes > 0:
@@ -102,12 +108,13 @@ class EximNode:
 
 # Main script body
 args = parse_args()
+expect_elastic_ips = args.refresh_group in ELASTIC_IP_GROUPS
 
 with open(IN_FILE, 'r') as f:
     input = json.load(f)
 
 nodes_to_replace = [EximNode.from_json_list(node) for node in input[args.refresh_group]]
-replacement_nodes = wait_for_replacements(nodes_to_replace)
+replacement_nodes = wait_for_replacements(nodes_to_replace, expect_elastic_ips)
 replacement_node_json_list = [node.to_json_list(args) for node in replacement_nodes]
 
 output = {args.refresh_group: replacement_node_json_list}
