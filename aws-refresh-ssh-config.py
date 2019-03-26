@@ -20,7 +20,7 @@ def parse_args():
     parser.add_argument('--no-elastic-ips', dest='no_elastic_ips', default=False, action='store_true', help='Disable the expectation for elastic IPs on bootnodes and observers')
     return parser.parse_args()
 
-def check_for_replacement(old_exim_node, expect_elastic_ips):
+def check_for_replacement(old_exim_node, expect_elastic_ips, replacements_so_far):
     name_filter = {'Name': 'tag:Name', 'Values': [old_exim_node.name]}
     conn = boto3.resource('ec2', region_name=old_exim_node.region)
     # We distinguish 3 cases based on the contents of 'instances'
@@ -31,6 +31,10 @@ def check_for_replacement(old_exim_node, expect_elastic_ips):
     # In case 2 this loop has no iterations
     for instance in instances:
         temp_exim_node = EximNode.from_boto_instance(instance)
+        # Skip this node because it's already in our replacements list
+        if temp_exim_node in replacements_so_far:
+            print(f'Skipping matching node {temp_exim_node.instance_id} because it is already in replacements list')
+            continue
         # This catches case 1, and case 3 where the old node still exists
         if old_exim_node.instance_id == temp_exim_node.instance_id:
             print(f'Old instance {old_exim_node.instance_id} for {old_exim_node.name} not yet replaced')
@@ -51,7 +55,8 @@ def wait_for_replacements(nodes_to_replace, expect_elastic_ips):
     while num_unreplaced_nodes > 0:
         for original_node,replacement_node in original_to_replacement.items():
             if replacement_node == None:
-                original_to_replacement[original_node] = check_for_replacement(original_node, expect_elastic_ips)
+                replacements_so_far = [replacement for replacement in original_to_replacement.values() if replacement != None]
+                original_to_replacement[original_node] = check_for_replacement(original_node, expect_elastic_ips, replacements_so_far)
         num_unreplaced_nodes = len([node for node in original_to_replacement.values() if node == None])
         print(f'Still waiting for {num_unreplaced_nodes} unreplaced nodes')
         if num_unreplaced_nodes > 0:
